@@ -66,3 +66,6 @@ pub mod time;
 
 #[cfg(feature = "stm32f746")]
 pub mod timer;
+
+#[cfg(feature = "stm32f746")]
+pub mod dac;

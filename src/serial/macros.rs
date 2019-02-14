@@ -27,7 +27,7 @@ macro_rules! halUsart {
                     rcc.$apbXenr.modify(|_, w| w.$usartXen().set_bit());
 
                     // Calculate correct baudrate divisor on the fly
-                    let brr = clocks.sysclk().0 / baud_rate.0;
+                    let brr = clocks.sysclk().0 / (baud_rate.0 * 4); //  (baud_rate.0 * 2) *2 patch to have the right baud_rate. Didn't see why.
                     usart.brr.write(|w| unsafe { w.bits(brr) });
 
                     // Reset other registers to disable advanced USART features
@@ -38,6 +38,30 @@ macro_rules! halUsart {
                     usart.cr1.modify(|_, w| unsafe { w.bits(0xD) });
 
                     Serial { usart, pins }
+                }
+
+                /// Starts listening for an interrupt event
+                pub fn listen(&mut self, event: Event) {
+                    match event {
+                        Event::Rxne => {
+                            self.usart.cr1.modify(|_, w| w.rxneie().set_bit())
+                        },
+                        Event::Txe => {
+                            self.usart.cr1.modify(|_, w| w.txeie().set_bit())
+                        },
+                    }
+                }
+
+                /// End listening for an interrupt event
+                pub fn unlisten(&mut self, event: Event) {
+                    match event {
+                        Event::Rxne => {
+                            self.usart.cr1.modify(|_, w| w.rxneie().clear_bit())
+                        },
+                        Event::Txe => {
+                            self.usart.cr1.modify(|_, w| w.txeie().clear_bit())
+                        },
+                    }
                 }
 
                 pub fn split(self) -> (Tx<$USARTX>, Rx<$USARTX>) {
@@ -74,7 +98,7 @@ macro_rules! halUsart {
                     // NOTE(unsafe) atomic read with no side effects
                     let isr = unsafe { (*$USARTX::ptr()).isr.read() };
 
-                    Err(if isr.pe().bit_is_set() {
+                    let error = Err(if isr.pe().bit_is_set() {
                         nb::Error::Other(Error::Parity)
                     } else if isr.fe().bit_is_set() {
                         nb::Error::Other(Error::Framing)
@@ -88,8 +112,19 @@ macro_rules! halUsart {
                             ptr::read_volatile(&(*$USARTX::ptr()).rdr as *const _ as *const _)
                         });
                     } else {
-                        nb::Error::WouldBlock
-                    })
+                         return Err(nb::Error::WouldBlock);
+                    });
+
+                    // Some error occured. In order to clear that error flag, you have to
+                    // do a read from the sr register followed by a read from the dr
+                    // register
+                    // NOTE(read_volatile) see `write_volatile` below
+                    unsafe {
+                        //doesn't work on STM32F7x ?????
+                        ptr::read_volatile(&(*$USARTX::ptr()).isr as *const _ as *const _);
+                        ptr::read_volatile(&(*$USARTX::ptr()).rdr as *const _ as *const _);
+                    }
+                    error
                 }
             }
 
