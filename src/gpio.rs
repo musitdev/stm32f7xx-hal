@@ -50,6 +50,9 @@ pub struct PullUp;
 /// Open drain input or output (type state)
 pub struct OpenDrain;
 
+/// Analog input or output (type state)
+pub struct Analog;
+
 /// Output mode (type state)
 pub struct Output<MODE> {
     _mode: PhantomData<MODE>,
@@ -71,7 +74,7 @@ macro_rules! gpio {
 
             use super::{
                 Alternate, Floating, GpioExt, Input, OpenDrain, Output,
-                PullDown, PullUp, PushPull, AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF8, AF9, AF10,
+                PullDown, PullUp, PushPull, Analog, AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF8, AF9, AF10,
                 AF11, AF12, AF13, AF14, AF15
             };
 
@@ -327,6 +330,24 @@ macro_rules! gpio {
                             &(*$GPIOX::ptr()).pupdr.modify(|r, w| {
                                 w.bits((r.bits() & !(0b11 << offset)) | (0b01 << offset))
                          })};
+
+                        $PXi { _mode: PhantomData }
+                    }
+
+                    /// Configures the pin to operate as an open drain output pin
+                    pub fn into_analog_output(
+                        self,
+                    ) -> $PXi<Output<Analog>> {
+                        let offset = 2 * $i;
+                        unsafe {
+                            &(*$GPIOX::ptr()).moder.modify(|r, w| {
+                                w.bits((r.bits() & !(0b11 << offset)) | (0b11 << offset))
+                         });
+                            &(*$GPIOX::ptr()).pupdr.modify(|r, w| {
+                                w.bits((r.bits() & !(0b11 << offset)) | (0b00 << offset))
+                         });
+                        };
+
 
                         $PXi { _mode: PhantomData }
                     }

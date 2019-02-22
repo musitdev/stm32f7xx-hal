@@ -36,12 +36,16 @@ impl Dac {
         }
     }
 
-    pub fn dacs(&self) -> (Dac1, Dac2) {
-        (Dac1{dac:&self.dac}, Dac2{dac:&self.dac})
+    pub fn create_dac_channel1(&self, _pin: crate::gpio::gpioa::PA4<crate::gpio::Output<crate::gpio::Analog>>) -> Dac1 {
+        self.dac1()
     }
 
     pub fn dac1(&self) -> Dac1 {
         Dac1{dac:&self.dac}
+    }
+
+    pub fn create_dac_channel2(&self, _pin: crate::gpio::gpioa::PA5<crate::gpio::Output<crate::gpio::Analog>>) -> Dac2 {
+        self.dac2()
     }
 
     pub fn dac2(&self) -> Dac2 {
