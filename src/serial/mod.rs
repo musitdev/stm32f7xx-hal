@@ -6,36 +6,20 @@ use crate::hal::prelude::*;
 use crate::hal::serial;
 use nb::block;
 
-#[cfg(any(
-    feature = "stm32f745",
-    feature = "stm32f746",
-))]
+#[cfg(any(feature = "stm32f745", feature = "stm32f746",))]
 use crate::device::{RCC, USART1, USART2, USART6};
 
-#[cfg(any(
-    feature = "stm32f745",
-    feature = "stm32f746",
-))]
-use crate::gpio::gpioa::{PA9};
-use crate::gpio::gpioc::{PC6, PC7};
+#[cfg(any(feature = "stm32f745", feature = "stm32f746",))]
+use crate::gpio::gpioa::PA9;
 
-#[cfg(any(
-    feature = "stm32f745",
-    feature = "stm32f746",
-))]
+#[cfg(any(feature = "stm32f745", feature = "stm32f746",))]
 use crate::gpio::gpiod::{PD5, PD6};
 use crate::gpio::gpiog::{PG14, PG9};
 
-#[cfg(any(
-    feature = "stm32f745",
-    feature = "stm32f746",
-))]
-use crate::gpio::gpiob::{PB7};
+#[cfg(any(feature = "stm32f745", feature = "stm32f746",))]
+use crate::gpio::gpiob::PB7;
 
-#[cfg(any(
-    feature = "stm32f745",
-    feature = "stm32f746",
-))]
+#[cfg(any(feature = "stm32f745", feature = "stm32f746",))]
 use crate::gpio::{Alternate, AF7, AF8};
 
 use crate::rcc::Clocks;
@@ -73,20 +57,15 @@ impl<USART, TX, RX> Pins<USART> for (TX, RX)
 where
     TX: PinTx<USART>,
     RX: PinRx<USART>,
-{}
+{
+}
 
-#[cfg(any(
-    feature = "stm32f745",
-    feature = "stm32f746",
-))]
+#[cfg(any(feature = "stm32f745", feature = "stm32f746",))]
 impl PinTx<USART1> for PA9<Alternate<AF7>> {}
 impl PinTx<USART2> for PD5<Alternate<AF7>> {}
 impl PinTx<USART6> for PG14<Alternate<AF8>> {}
 
-#[cfg(any(
-    feature = "stm32f745",
-    feature = "stm32f746",
-))]
+#[cfg(any(feature = "stm32f745", feature = "stm32f746",))]
 impl PinRx<USART1> for PB7<Alternate<AF7>> {}
 impl PinRx<USART2> for PD6<Alternate<AF7>> {}
 impl PinRx<USART6> for PG9<Alternate<AF8>> {}
@@ -110,10 +89,7 @@ pub struct Tx<USART> {
 #[macro_use]
 mod macros;
 
-#[cfg(any(
-    feature = "stm32f745",
-    feature = "stm32f746",
-))]
+#[cfg(any(feature = "stm32f745", feature = "stm32f746",))]
 halUsart! {
     USART1: (usart1, apb2enr, usart1en, pclk2),
     USART2: (usart2, apb1enr, usart2en, pclk1),

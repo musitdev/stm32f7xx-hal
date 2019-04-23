@@ -10,7 +10,7 @@ macro_rules! halUsart {
                     usart: $USARTX,
                     pins: PINS,
                     baud_rate: Bps,
-                    clocks: Clocks) -> Self
+                    clocks: Clocks, over8: bool) -> Self
                 where
                     PINS: Pins<$USARTX>,
                 {
@@ -25,6 +25,14 @@ macro_rules! halUsart {
 
                     // Enable clock for USART
                     rcc.$apbXenr.modify(|_, w| w.$usartXen().set_bit());
+
+                    // Enable oversampling by 8
+                    if over8 {
+                        usart.cr1.modify(|_, w| w.over8().set_bit());
+                    } else {
+                        usart.cr1.modify(|_, w| w.over8().clear_bit());
+                    }
+
 
                     // Calculate correct baudrate divisor on the fly
                     let brr = clocks.sysclk().0 / (baud_rate.0 * 4); //  (baud_rate.0 * 2) *2 patch to have the right baud_rate. Didn't see why.
@@ -94,6 +102,28 @@ macro_rules! halUsart {
             impl serial::Read<u8> for Rx<$USARTX> {
                 type Error = Error;
 
+    /*            fn read(&mut self) -> nb::Result<u8, Error> {
+                    // NOTE(unsafe) atomic read with no side effects
+                    let isr = unsafe { (*$USARTX::ptr()).isr.read() };
+
+                    Err(if isr.pe().bit_is_set() {
+                        nb::Error::Other(Error::Parity)
+                    } else if isr.fe().bit_is_set() {
+                        nb::Error::Other(Error::Framing)
+                    } else if isr.nf().bit_is_set() {
+                        nb::Error::Other(Error::Noise)
+                    } else if isr.ore().bit_is_set() {
+                        nb::Error::Other(Error::Overrun)
+                    } else if isr.rxne().bit_is_set() {
+                        // NOTE(read_volatile) see `write_volatile` below
+                        return Ok(unsafe {
+                            ptr::read_volatile(&(*$USARTX::ptr()).rdr as *const _ as *const _)
+                        });
+                    } else {
+                        nb::Error::WouldBlock
+                    })
+                } */
+
                 fn read(&mut self) -> nb::Result<u8, Error> {
                     // NOTE(unsafe) atomic read with no side effects
                     let isr = unsafe { (*$USARTX::ptr()).isr.read() };
@@ -161,6 +191,8 @@ macro_rules! halUsart {
                 }
 
                 fn write(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
+                    //change behaviour. Wait the
+
                     // NOTE(unsafe) atomic read with no side effects
                     let isr = unsafe { (*$USARTX::ptr()).isr.read() };
 
