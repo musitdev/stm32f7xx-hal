@@ -1158,6 +1158,8 @@ macro_rules! hal {
 
                     // mstr: master configuration
                     // lsbfirst: MSB first
+                    // SPI_CRCCALCULATION_DISABLE crsen().disabled()
+                    //CRCLength cdcl().sixteen_bit()
                     // ssm: enable software slave management (NSS pin free for other uses)
                     // ssi: set nss high = master mode
                     // dff: 8 bit frames
@@ -1170,10 +1172,14 @@ macro_rules! hal {
                             .bit(mode.polarity == Polarity::IdleHigh)
                             .mstr()
                             .set_bit()
+                            .crcen()
+                            .disabled()
+                            //.cdcl()
+                            //.sixteen_bit()
                             .br()
-                            .bits(br)
+                            .div256() //.bits(br)
                             .lsbfirst()
-                            .clear_bit()
+                            .msbfirst() // clear_bit()
                             .ssm()
                             .set_bit()
                             .ssi()
@@ -1184,6 +1190,17 @@ macro_rules! hal {
                             .clear_bit()
                             .spe()
                             .set_bit()
+                    });
+
+                    //NSS pulse management disable
+                    //  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+                    spi.cr2.write(|w| {
+                        w.nssp()
+                            .no_pulse()
+                            .frf()
+                            .motorola()
+                            .ds()
+                            .sixteen_bit()
                     });
 
                     Spi { spi, pins }
