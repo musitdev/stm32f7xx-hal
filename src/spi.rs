@@ -73,6 +73,7 @@ pub enum Error {
     ModeFault,
     /// CRC error
     Crc,
+    EndTranscationReadError,
     #[doc(hidden)]
     _Extensible,
 }
@@ -322,7 +323,7 @@ macro_rules! hal {
                             //.cdcl()
                             //.sixteen_bit()
                             .br()
-                            .div256() //.bits(br)
+                            .div256()// .bits(br)
                             .lsbfirst()
                             .msbfirst() // clear_bit()
                             .ssm()
@@ -330,7 +331,7 @@ macro_rules! hal {
                             .ssi()
                             .set_bit()
                             .rxonly()
-                            .clear_bit()
+                            .clear_bit() //.clear_bit()
                             .bidimode()
                             .clear_bit()
                             .spe()
@@ -402,6 +403,37 @@ macro_rules! hal {
                 pub fn free(self) -> ($SPIX, PINS) {
                     (self.spi, self.pins)
                 }
+
+               pub fn send_only_16b(&mut self, valeur_dac: u16) -> nb::Result<(), Error> {
+                    let sr = self.spi.sr.read();
+
+                    Err(if sr.ovr().bit_is_set() {
+                        nb::Error::Other(Error::Overrun)
+                    } else if sr.modf().bit_is_set() {
+                        nb::Error::Other(Error::ModeFault)
+                    } else if sr.crcerr().bit_is_set() {
+                        nb::Error::Other(Error::Crc)
+                    } else if sr.txe().bit_is_set() {
+                        // NOTE(write_volatile) see note above
+                        unsafe {
+                            ptr::write_volatile(&self.spi.dr as *const _ as *mut u16, valeur_dac as u16);
+                        }
+                        while sr.bsy().bit_is_set() {}
+                        //write to dr and bsy end before the real send of data. Add a way time to be sure all data are send.
+                        //very ugly. Don't find a better way to synchronise call output with real data send end.
+                        //must be changed if send speed change. tested with a div256
+                        for _ in 0..6 {
+                            unsafe {
+                                //read one time at the end to end the transation and way the end of the send
+                                //work only for the first bit.
+                                ptr::read_volatile(&self.spi.dr as *const _ as *const u16);
+                            }
+                        }
+                        return Ok(());
+                    } else {
+                        nb::Error::WouldBlock
+                    })
+                }
             }
 
             impl<PINS> spi::FullDuplex<u8> for Spi<$SPIX, PINS> {
@@ -430,21 +462,23 @@ macro_rules! hal {
                 fn send(&mut self, byte: u8) -> nb::Result<(), Error> {
                     let sr = self.spi.sr.read();
 
-                    Err(if sr.ovr().bit_is_set() {
-                        nb::Error::Other(Error::Overrun)
+                    if sr.ovr().bit_is_set() {
+                        Err(nb::Error::Other(Error::Overrun))
                     } else if sr.modf().bit_is_set() {
-                        nb::Error::Other(Error::ModeFault)
+                        Err(nb::Error::Other(Error::ModeFault))
                     } else if sr.crcerr().bit_is_set() {
-                        nb::Error::Other(Error::Crc)
+                        Err(nb::Error::Other(Error::Crc))
                     } else if sr.txe().bit_is_set() {
                         // NOTE(write_volatile) see note above
-                        unsafe { ptr::write_volatile(&self.spi.dr as *const _ as *mut u8, byte) }
-                        return Ok(());
+                        unsafe {
+                            ptr::write_volatile(&self.spi.dr as *const _ as *mut u8, byte);
+                         }
+                        while sr.bsy().bit_is_set() {}
+                        Ok(())
                     } else {
-                        nb::Error::WouldBlock
-                    })
+                        Err(nb::Error::WouldBlock)
+                    }
                 }
-
             }
 
             impl<PINS> embedded_hal::blocking::spi::transfer::Default<u8> for Spi<$SPIX, PINS> {}
