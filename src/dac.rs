@@ -1,4 +1,3 @@
-use nb;
 use crate::device::RCC;
 use stm32f7::stm32f7x6::DAC;
 
