@@ -38,6 +38,7 @@ fn main() -> ! {
     let tx = gpioa.pa9.into_alternate_af7();
     let rx = gpiob.pb7.into_alternate_af7();
 
+<<<<<<< 6a51fc30e4eeb46d6e833d2dfef1dbc284577844
     let serial = Serial::new(
         p.USART1,
         (tx, rx),
@@ -46,6 +47,14 @@ fn main() -> ! {
             baud_rate: 115_200.bps(),
             oversampling: serial::Oversampling::By16,
         },
+=======
+    let serial = Serial::usart1(
+        p.USART1,
+        (tx, rx),
+        115_200.bps(),
+        clocks,
+        false,
+>>>>>>> Fix build errors in serial examples
     );
     let (mut tx, _) = serial.split();
 
