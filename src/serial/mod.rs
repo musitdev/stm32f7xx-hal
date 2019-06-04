@@ -91,9 +91,9 @@ mod macros;
 
 #[cfg(any(feature = "stm32f745", feature = "stm32f746",))]
 halUsart! {
-    USART1: (usart1, apb2enr, usart1en, pclk2),
-    USART2: (usart2, apb1enr, usart2en, pclk1),
-    USART6: (usart6, apb2enr, usart6en, pclk2),
+    USART1: (usart1, apb2enr, usart1en),
+    USART2: (usart2, apb1enr, usart2en),
+    USART6: (usart6, apb2enr, usart6en),
 }
 
 impl<USART> Write for Tx<USART>
