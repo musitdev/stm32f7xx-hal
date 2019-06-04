@@ -55,18 +55,6 @@ pub struct APB2 {
     _0: (),
 }
 
-impl APB2 {
-    pub(crate) fn enr(&mut self) -> &rcc::APB2ENR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb2enr }
-    }
-
-    pub(crate) fn rstr(&mut self) -> &rcc::APB2RSTR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb2rstr }
-    }
-}
-
 const HSI: u32 = 16_000_000; // Hz
 
 pub struct CFGR {
@@ -225,27 +213,25 @@ impl CFGR {
             let pclk2 = hclk / ppre2;
 
             // Adjust flash wait states
-            unsafe {
-                flash.acr.write(|w| {
-                    w.latency().bits(if sysclk <= 30_000_000 {
-                        0b0000
-                    } else if sysclk <= 60_000_000 {
-                        0b0001
-                    } else if sysclk <= 90_000_000 {
-                        0b0010
-                    } else if sysclk <= 120_000_000 {
-                        0b0011
-                    } else if sysclk <= 150_000_000 {
-                        0b0100
-                    } else if sysclk <= 180_000_000 {
-                        0b0101
-                    } else if sysclk <= 210_000_000 {
-                        0b0110
-                    } else {
-                        0b0111
-                    })
+            flash.acr.write(|w| {
+                w.latency().bits(if sysclk <= 30_000_000 {
+                    0b0000
+                } else if sysclk <= 60_000_000 {
+                    0b0001
+                } else if sysclk <= 90_000_000 {
+                    0b0010
+                } else if sysclk <= 120_000_000 {
+                    0b0011
+                } else if sysclk <= 150_000_000 {
+                    0b0100
+                } else if sysclk <= 180_000_000 {
+                    0b0101
+                } else if sysclk <= 210_000_000 {
+                    0b0110
+                } else {
+                    0b0111
                 })
-            }
+            });
 
             // use PLL as source
             rcc.pllcfgr.write(|w| unsafe {
