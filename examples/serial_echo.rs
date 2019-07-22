@@ -34,14 +34,12 @@ fn main() -> ! {
     let tx = gpioa.pa9.into_alternate_af7();
     let rx = gpiob.pb7.into_alternate_af7();
 
-    let serial = Serial::new(
+    let serial = Serial::usart1(
         p.USART1,
         (tx, rx),
+        115_200.bps(),
         clocks,
-        serial::Config {
-            baud_rate: 115_200.bps(),
-            oversampling: serial::Oversampling::By16,
-        },
+        false,
     );
 
     let (mut tx, mut rx) = serial.split();
